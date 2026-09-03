@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meeting Voice Assistant - Multi-Provider with Bulgarian</title>
+    <title>Sors Meeting Voice Assistant</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
@@ -13,6 +13,8 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:var(--bg-dark); color:var(--text-primary); font-family:'Segoe UI',sans-serif; min-height:100vh; }
         .app-container { max-width:800px; margin:0 auto; padding:20px 15px; }
+        /* Hide the entire UI when hidden-mode is applied */
+        .app-container.hidden-mode { display:none; }
         .glass-card { background:var(--bg-card); border-radius:20px; border:1px solid var(--border-color); padding:25px; margin-bottom:20px; }
         .app-header { text-align:center; margin-bottom:25px; }
         .app-header h1 { font-size:1.8rem; background:linear-gradient(135deg,#667eea,#764ba2); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
@@ -30,6 +32,7 @@
         .btn-toggle .btn-icon { font-size:2.2rem; line-height:1; }
         .form-select, .form-input { background:#1e2a4a; border:1px solid var(--border-color); color:var(--text-primary); border-radius:10px; padding:10px 15px; font-size:.9rem; width:100%; }
         .text-area { background:#0f1a3a; border:1px solid var(--border-color); border-radius:12px; color:var(--text-primary); padding:15px; width:100%; min-height:120px; resize:vertical; }
+        #answerArea { min-height:240px; } /* double the default height */
         .btn-action { border-radius:10px; padding:8px 16px; font-size:.85rem; font-weight:600; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
         .btn-copy { background:rgba(102,126,234,.2); color:#667eea; border:1px solid rgba(102,126,234,.3); }
         .btn-settings { background:rgba(255,255,255,.05); color:#a0a0b0; border:1px solid var(--border-color); }
@@ -48,6 +51,8 @@
         .badge-language { padding:3px 8px; border-radius:6px; font-size:.7rem; font-weight:600; background:rgba(102,126,234,.2); color:#a5b4fc; }
         .form-check { display:flex; align-items:center; gap:10px; }
         .form-check-input { width:20px; height:20px; cursor:pointer; }
+        .hidden-btn { display:none; }
+        .debug-header { display:flex; justify-content:space-between; align-items:center; margin-top:10px; }
     </style>
 </head>
 <body>
@@ -56,7 +61,7 @@
     <div class="app-container" id="appContainer">
         <div class="app-header">
             <div class="logo-icon" style="font-size:3rem;"><i class="bi bi-mic-fill"></i></div>
-            <h1>Meeting Voice Assistant</h1>
+            <h1>Sors Meeting Voice Assistant</h1>
             <p class="subtitle" style="color:#a0a0b0;">Multi-provider with Bulgarian language</p>
         </div>
 
@@ -86,7 +91,7 @@
         <div class="glass-card">
             <div class="d-flex justify-content-between mb-2">
                 <label class="form-label mb-0"><i class="bi bi-chat-square-text"></i> Transcription (editable)</label>
-                <button class="btn-action btn-copy" id="copyTranscriptionBtn"><i class="bi bi-clipboard"></i> Copy</button>
+                <button class="btn-action btn-copy hidden-btn" id="copyTranscriptionBtn"><i class="bi bi-clipboard"></i> Copy</button>
             </div>
             <textarea class="text-area" id="transcriptionArea" placeholder="Your speech appears here, you can edit before sending..."></textarea>
             <div class="alert-custom alert-info-custom" id="micWarning"><i class="bi bi-info-circle"></i> Mic active simultaneously.</div>
@@ -96,10 +101,10 @@
             <div class="d-flex justify-content-between mb-2">
                 <label class="form-label mb-0"><i class="bi bi-robot"></i> AI Answer</label>
                 <div class="d-flex gap-2">
-                    <button class="btn-action btn-copy" id="copyAnswerBtn"><i class="bi bi-clipboard"></i> Copy</button>
+                    <button class="btn-action btn-copy hidden-btn" id="copyAnswerBtn"><i class="bi bi-clipboard"></i> Copy</button>
                     <button class="btn-action btn-settings" id="settingsToggleBtn"><i class="bi bi-gear"></i> Settings</button>
-                    <button class="btn-action btn-clear" id="testAIBtn"><i class="bi bi-lightning"></i> Test AI</button>
-                    <button class="btn-action btn-clear" id="testProxyBtn"><i class="bi bi-wifi"></i> Test Proxy</button>
+                    <button class="btn-action btn-clear" id="testAIBtn"><i class="bi bi-lightning"></i> Send</button>
+                    <button class="btn-action btn-clear hidden-btn" id="testProxyBtn"><i class="bi bi-wifi"></i> Test Proxy</button>
                 </div>
             </div>
             <textarea class="text-area" id="answerArea" readonly></textarea>
@@ -150,10 +155,26 @@
                             <i class="bi bi-box-arrow-up-right"></i> Open CORS Proxy Access
                         </button>
                     </div>
+                    <!-- Export / Import Settings -->
+                    <div class="col-12 mt-3 border-top pt-3">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <button class="btn-action btn-clear w-100" id="exportSettingsBtn"><i class="bi bi-download"></i> Export Settings</button>
+                            </div>
+                            <div class="col-md-6">
+                                <button class="btn-action btn-clear w-100" id="importSettingsBtn"><i class="bi bi-upload"></i> Import Settings</button>
+                                <input type="file" id="importSettingsFile" accept=".config" style="display:none;" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="alert-custom alert-error-custom" id="errorAlert"></div>
+            <div class="debug-header">
+                <small class="text-secondary">Debug Log</small>
+                <button class="btn-action btn-clear" id="clearLogBtn"><i class="bi bi-trash3"></i> Clear Log</button>
+            </div>
             <div class="debug-console" id="debugConsole"></div>
         </div>
 
@@ -266,6 +287,11 @@
             const $testAIBtn = $('#testAIBtn');
             const $testProxyBtn = $('#testProxyBtn');
             const $openCorsDemoBtn = $('#openCorsDemoBtn');
+            const $exportSettingsBtn = $('#exportSettingsBtn');
+            const $importSettingsBtn = $('#importSettingsBtn');
+            const $importSettingsFile = $('#importSettingsFile');
+            const $clearLogBtn = $('#clearLogBtn');
+            const $debugConsole = $('#debugConsole');
 
             // ========== PROVIDER DEFAULTS ==========
             const PROVIDER_DEFAULTS = {
@@ -583,7 +609,7 @@
                 debugLog('Processing lock released.');
             }
 
-            // ========== TEST AI ==========
+            // ========== TEST AI (rename to Send) ==========
             $testAIBtn.on('click', function() {
                 if (isProcessingAI) return;
                 const currentQuestion = $transcriptionArea.val().trim();
@@ -594,7 +620,7 @@
                 sendToAI(currentQuestion);
             });
 
-            // ========== TEST PROXY ==========
+            // ========== TEST PROXY (hidden) ==========
             $testProxyBtn.on('click', function() {
                 debugLog('Testing proxy connectivity...');
                 const testUrl = 'https://text.pollinations.ai/test?model=openai';
@@ -624,12 +650,85 @@
                 window.open('https://cors-anywhere.herokuapp.com/corsdemo', '_blank');
             });
 
+            // ========== EXPORT / IMPORT SETTINGS ==========
+            $exportSettingsBtn.on('click', function() {
+                const settings = {
+                    apiProvider: $apiProvider.val(),
+                    apiUrlInput: $apiUrlInput.val(),
+                    apiToken: $apiToken.val(),
+                    apiModel: $apiModel.val(),
+                    promptKeyInput: $promptKeyInput.val(),
+                    proxyToggle: $proxyToggle.is(':checked'),
+                    languageSelect: $('#languageSelect').val(),
+                    selectedLanguage: selectedLanguage
+                };
+                const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'sors.meet.config';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                debugLog('Settings exported.');
+                showAlert('Settings exported to sors.meet.config');
+            });
+
+            $importSettingsBtn.on('click', function() {
+                $('#importSettingsFile').trigger('click');
+            });
+
+            $importSettingsFile.on('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    try {
+                        const settings = JSON.parse(ev.target.result);
+                        if (settings.apiProvider) $apiProvider.val(settings.apiProvider);
+                        if (settings.apiUrlInput) $apiUrlInput.val(settings.apiUrlInput);
+                        if (settings.apiToken) $apiToken.val(settings.apiToken);
+                        if (settings.apiModel) $apiModel.val(settings.apiModel);
+                        if (settings.promptKeyInput) $promptKeyInput.val(settings.promptKeyInput);
+                        if (settings.proxyToggle !== undefined) $proxyToggle.prop('checked', settings.proxyToggle);
+                        if (settings.languageSelect) $('#languageSelect').val(settings.languageSelect);
+                        if (settings.selectedLanguage) selectedLanguage = settings.selectedLanguage;
+                        // Update provider fields
+                        updateProviderFields();
+                        // Update language badge
+                        $('#currentLangBadge').text($('#languageSelect').val());
+                        debugLog('Settings imported successfully.');
+                        showAlert('Settings imported successfully.');
+                    } catch (err) {
+                        showError('Failed to parse config file: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+                // Reset input
+                $(this).val('');
+            });
+
+            // ========== CLEAR LOG ==========
+            $clearLogBtn.on('click', function() {
+                $('#debugConsole').html('');
+                debugLog('Logs cleared.');
+            });
+
             // ========== EVENTS ==========
             $toggleBtn.on('click', () => isRecording ? stopRecording(true) : startRecording());
             $('#languageSelect').on('change', function() { selectedLanguage=$(this).val(); $('#currentLangBadge').text(selectedLanguage); });
             $settingsToggleBtn.on('click', () => $settingsPanel.toggleClass('show'));
-            $hideBtn.on('click', () => { isHidden=true; $appContainer.addClass('hidden-mode'); $floatingRestoreBtn.addClass('active'); });
-            $floatingRestoreBtn.on('click', () => { isHidden=false; $appContainer.removeClass('hidden-mode'); $floatingRestoreBtn.removeClass('active'); });
+            $hideBtn.on('click', () => { 
+                isHidden=true; 
+                $appContainer.addClass('hidden-mode'); 
+                $floatingRestoreBtn.addClass('active'); 
+            });
+            $floatingRestoreBtn.on('click', () => { 
+                isHidden=false; 
+                $appContainer.removeClass('hidden-mode'); 
+                $floatingRestoreBtn.removeClass('active'); 
+            });
             $clearAllBtn.on('click', () => { if(isRecording) stopRecording(false); $transcriptionArea.val(''); $answerArea.val(''); hideError(); updateStatus('idle','Ready'); });
             $copyTranscriptionBtn.on('click', () => copyToClipboard($transcriptionArea.val(), $(this)));
             $copyAnswerBtn.on('click', () => copyToClipboard($answerArea.val(), $(this)));
