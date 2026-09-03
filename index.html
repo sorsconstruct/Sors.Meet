@@ -467,7 +467,7 @@
 
                 const fetchWithOptions = (url) => {
                     debugLog(`fetch() called for: ${url}`);
-                    const opts = { method, headers, signal: AbortSignal.timeout(10000) };
+                    const opts = { method, headers, signal: AbortSignal.timeout(15000) };
                     if (requestBody) opts.body = JSON.stringify(requestBody);
                     return fetch(url, opts);
                 };
