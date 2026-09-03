@@ -13,8 +13,7 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:var(--bg-dark); color:var(--text-primary); font-family:'Segoe UI',sans-serif; min-height:100vh; }
         .app-container { max-width:800px; margin:0 auto; padding:20px 15px; }
-        /* Hide the entire UI when hidden-mode is applied */
-        .app-container.hidden-mode { display:none; }
+        .app-container.hidden-mode { display:none; } /* hide entire UI */
         .glass-card { background:var(--bg-card); border-radius:20px; border:1px solid var(--border-color); padding:25px; margin-bottom:20px; }
         .app-header { text-align:center; margin-bottom:25px; }
         .app-header h1 { font-size:1.8rem; background:linear-gradient(135deg,#667eea,#764ba2); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
@@ -32,7 +31,7 @@
         .btn-toggle .btn-icon { font-size:2.2rem; line-height:1; }
         .form-select, .form-input { background:#1e2a4a; border:1px solid var(--border-color); color:var(--text-primary); border-radius:10px; padding:10px 15px; font-size:.9rem; width:100%; }
         .text-area { background:#0f1a3a; border:1px solid var(--border-color); border-radius:12px; color:var(--text-primary); padding:15px; width:100%; min-height:120px; resize:vertical; }
-        #answerArea { min-height:240px; } /* double the default height */
+        #answerArea { min-height:240px; } /* double height */
         .btn-action { border-radius:10px; padding:8px 16px; font-size:.85rem; font-weight:600; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
         .btn-copy { background:rgba(102,126,234,.2); color:#667eea; border:1px solid rgba(102,126,234,.3); }
         .btn-settings { background:rgba(255,255,255,.05); color:#a0a0b0; border:1px solid var(--border-color); }
@@ -51,7 +50,7 @@
         .badge-language { padding:3px 8px; border-radius:6px; font-size:.7rem; font-weight:600; background:rgba(102,126,234,.2); color:#a5b4fc; }
         .form-check { display:flex; align-items:center; gap:10px; }
         .form-check-input { width:20px; height:20px; cursor:pointer; }
-        .hidden-btn { display:none; }
+        .hidden-btn { display:none; } /* hide copy buttons and test proxy */
         .debug-header { display:flex; justify-content:space-between; align-items:center; margin-top:10px; }
     </style>
 </head>
@@ -652,8 +651,8 @@
 
             // ========== EXPORT / IMPORT SETTINGS ==========
             $exportSettingsBtn.on('click', function() {
+                // Do NOT include apiProvider
                 const settings = {
-                    apiProvider: $apiProvider.val(),
                     apiUrlInput: $apiUrlInput.val(),
                     apiToken: $apiToken.val(),
                     apiModel: $apiModel.val(),
@@ -686,7 +685,7 @@
                 reader.onload = function(ev) {
                     try {
                         const settings = JSON.parse(ev.target.result);
-                        if (settings.apiProvider) $apiProvider.val(settings.apiProvider);
+                        // Do NOT update provider (apiProvider)
                         if (settings.apiUrlInput) $apiUrlInput.val(settings.apiUrlInput);
                         if (settings.apiToken) $apiToken.val(settings.apiToken);
                         if (settings.apiModel) $apiModel.val(settings.apiModel);
@@ -694,8 +693,7 @@
                         if (settings.proxyToggle !== undefined) $proxyToggle.prop('checked', settings.proxyToggle);
                         if (settings.languageSelect) $('#languageSelect').val(settings.languageSelect);
                         if (settings.selectedLanguage) selectedLanguage = settings.selectedLanguage;
-                        // Update provider fields
-                        updateProviderFields();
+                        // Do NOT call updateProviderFields() - we keep current provider.
                         // Update language badge
                         $('#currentLangBadge').text($('#languageSelect').val());
                         debugLog('Settings imported successfully.');
